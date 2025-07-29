@@ -4,30 +4,31 @@ import { Header } from "@/components/Header";
 import { LoadingOverlay } from "./components/LoadingOverlay";
 import { ConnectionState, ConnectionStatus } from "./components/ConnectionStatus";
 import { ConnectionControls } from "./components/ConnectionControls";
+import { JWTConfig } from "./components/JWTConfig";
 import { useZoomSDK } from "./hooks/useZoomSDK";
+import { JWTTokenRequest } from "./services/jwtService";
 import "@/styles/index.css";
 
 function App() {
   const [enableE2E, setEnableE2E] = useState(false);
-  const [jwtToken, setJwtToken] = useState("");
-  const [sessionPassword, setSessionPassword] = useState("");
+  const [showJWTConfig, setShowJWTConfig] = useState(false);
+  const [jwtConfig, setJwtConfig] = useState<Partial<JWTTokenRequest>>({});
   
   // Use Zoom SDK hook
   const {
     isInitialized,
     isInSession,
     isConnecting,
+    isFetchingToken,
     error: zoomError,
     sessionName,
-    userName,
     initialize,
     joinSession,
     leaveSession,
-    cleanup
   } = useZoomSDK();
 
   // Derived state for UI compatibility
-  const connectionState: ConnectionState = isConnecting 
+  const connectionState: ConnectionState = (isConnecting || isFetchingToken)
     ? "connecting" 
     : isInSession 
     ? "connected" 
@@ -35,7 +36,9 @@ function App() {
     ? "error" 
     : "disconnected";
   
-  const connectionStatus = isConnecting 
+  const connectionStatus = isFetchingToken
+    ? "Fetching JWT token..."
+    : isConnecting 
     ? "Connecting to Zoom session..." 
     : isInSession 
     ? `In session: ${sessionName}` 
@@ -72,19 +75,10 @@ function App() {
     }
   };
 
-  // Handle joining room
+  // Handle joining room with automatic JWT token fetching
   const handleJoinRoom = async (name: string, room: string) => {
-    if (!jwtToken) {
-      throw new Error("JWT token is required to join session");
-    }
-
     try {
-      await joinSession({
-        session_name: room,
-        user_name: name,
-        session_password: sessionPassword || undefined,
-        jwt_token: jwtToken,
-      });
+      await joinSession(room, name, jwtConfig);
     } catch (error) {
       console.error("Failed to join room:", error);
       throw error;
@@ -139,6 +133,12 @@ function App() {
               
               <ConnectionStatus status={connectionStatus} state={connectionState} />
               
+              <JWTConfig
+                onConfigChange={setJwtConfig}
+                isVisible={showJWTConfig}
+                onToggle={() => setShowJWTConfig(!showJWTConfig)}
+              />
+              
               <ConnectionControls
                 onConnect={handleConnect}
                 onJoinRoom={handleJoinRoom}
@@ -159,7 +159,10 @@ function App() {
         
         
         
-        <LoadingOverlay isVisible={isConnecting} text="Connecting to Zoom session..." />
+        <LoadingOverlay 
+          isVisible={isConnecting || isFetchingToken} 
+          text={isFetchingToken ? "Fetching JWT token..." : "Connecting to Zoom session..."} 
+        />
       </div>
     </DevToolsContext>
   );

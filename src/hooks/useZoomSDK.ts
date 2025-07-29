@@ -1,11 +1,13 @@
 import { useState, useCallback, useEffect } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { ZoomSessionConfig, ZoomSDKError } from '../types/zoom';
+import { JWTService, JWTTokenRequest } from '../services/jwtService';
 
 export interface ZoomSDKState {
   isInitialized: boolean;
   isInSession: boolean;
   isConnecting: boolean;
+  isFetchingToken: boolean;
   error: string | null;
   sessionName: string | null;
   userName: string | null;
@@ -16,6 +18,7 @@ export const useZoomSDK = () => {
     isInitialized: false,
     isInSession: false,
     isConnecting: false,
+    isFetchingToken: false,
     error: null,
     sessionName: null,
     userName: null,
@@ -38,8 +41,8 @@ export const useZoomSDK = () => {
     }
   }, []);
 
-  // Join a Zoom session
-  const joinSession = useCallback(async (config: ZoomSessionConfig) => {
+  // Join a Zoom session with automatic JWT token fetching
+  const joinSession = useCallback(async (sessionName: string, userName: string, jwtRequest?: Partial<JWTTokenRequest>) => {
     if (!state.isInitialized) {
       throw new Error('SDK not initialized. Call initialize() first.');
     }
@@ -47,9 +50,34 @@ export const useZoomSDK = () => {
     try {
       setState(prev => ({
         ...prev,
-        isConnecting: true,
+        isFetchingToken: true,
         error: null,
       }));
+
+      // Create JWT request with defaults
+      const fullJwtRequest = {
+        ...JWTService.createDefaultRequest(sessionName, userName),
+        ...jwtRequest,
+        sessionName,
+        userIdentity: userName,
+      };
+
+      // Fetch JWT token from local server
+      const jwtToken = await JWTService.requestJWTToken(fullJwtRequest);
+
+      setState(prev => ({
+        ...prev,
+        isFetchingToken: false,
+        isConnecting: true,
+      }));
+
+      // Create Zoom session config
+      const config: ZoomSessionConfig = {
+        session_name: sessionName,
+        user_name: userName,
+        jwt_token: jwtToken,
+        session_password: jwtRequest?.sessionKey !== sessionName ? jwtRequest?.sessionKey : undefined,
+      };
 
       await invoke('zoom_join_session', { config });
 
@@ -57,15 +85,16 @@ export const useZoomSDK = () => {
         ...prev,
         isInSession: true,
         isConnecting: false,
-        sessionName: config.session_name,
-        userName: config.user_name,
+        sessionName,
+        userName,
       }));
     } catch (error) {
-      const zoomError = error as ZoomSDKError;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setState(prev => ({
         ...prev,
         isConnecting: false,
-        error: `Failed to join session: ${zoomError.message}`,
+        isFetchingToken: false,
+        error: `Failed to join session: ${errorMessage}`,
       }));
       throw error;
     }
@@ -100,6 +129,7 @@ export const useZoomSDK = () => {
         isInitialized: false,
         isInSession: false,
         isConnecting: false,
+        isFetchingToken: false,
         error: null,
         sessionName: null,
         userName: null,

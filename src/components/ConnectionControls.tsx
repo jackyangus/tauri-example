@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 
 interface ConnectionControlsProps {
   onConnect: () => Promise<void>;
-  onJoinRoom: (userName: string, roomId: string) => Promise<void>;
+  onJoinRoom: (userName: string, sessionName: string) => Promise<void>;
   onDisconnect: () => void;
   isConnected: boolean;
   isInRoom: boolean;
@@ -20,20 +20,20 @@ export const ConnectionControls: React.FC<ConnectionControlsProps> = ({
   onEnableE2EChange
 }) => {
   const [userName, setUserName] = useState("");
-  const [roomId, setRoomId] = useState("");
   const [selectedCamera, setSelectedCamera] = useState("");
   const [selectedMicrophone, setSelectedMicrophone] = useState("");
   const [cameras, setCameras] = useState<MediaDeviceInfo[]>([]);
   const [microphones, setMicrophones] = useState<MediaDeviceInfo[]>([]);
+  
+  // Generate a default session name
+  const defaultSessionName = "zoom-session-jack"
 
   useEffect(() => {
     // Load URL parameters
     const urlParams = new URLSearchParams(window.location.search);
     const username = urlParams.get("username");
-    const room = urlParams.get("room");
     
     if (username) setUserName(username);
-    if (room) setRoomId(room);
 
     // Load media devices
     loadMediaDevices();
@@ -69,9 +69,9 @@ export const ConnectionControls: React.FC<ConnectionControlsProps> = ({
 
   const handleJoinRoom = async () => {
     try {
-      await onJoinRoom(userName, roomId);
+      await onJoinRoom(userName, defaultSessionName);
     } catch (error) {
-      console.error("Failed to join room:", error);
+      console.error("Failed to join session:", error);
     }
   };
 
@@ -83,7 +83,7 @@ export const ConnectionControls: React.FC<ConnectionControlsProps> = ({
       </h4>
 
       <div className="row g-3 mb-4">
-        <div className="col-md-6">
+        <div className="col-md-12">
           <label htmlFor="userName" className="form-label">
             <i className="bi bi-person me-1" />
             User Name
@@ -97,21 +97,10 @@ export const ConnectionControls: React.FC<ConnectionControlsProps> = ({
             onChange={(e) => setUserName(e.target.value)}
             disabled={isInRoom}
           />
-        </div>
-        <div className="col-md-6">
-          <label htmlFor="roomId" className="form-label">
-            <i className="bi bi-door-open me-1" />
-            Room ID
-          </label>
-          <input
-            type="text"
-            className="form-control"
-            id="roomId"
-            placeholder="Enter room ID"
-            value={roomId}
-            onChange={(e) => setRoomId(e.target.value)}
-            disabled={isInRoom}
-          />
+          <div className="form-text">
+            <i className="bi bi-info-circle me-1" />
+            Session: {defaultSessionName}
+          </div>
         </div>
       </div>
 
@@ -183,10 +172,10 @@ export const ConnectionControls: React.FC<ConnectionControlsProps> = ({
         <button
           className="btn btn-success-custom btn-custom"
           onClick={handleJoinRoom}
-          disabled={!isConnected || isInRoom || !userName || !roomId}
+          disabled={!isConnected || isInRoom || !userName}
         >
-          <i className="bi bi-door-open" />
-          <span>Join Room</span>
+          <i className="bi bi-camera-video" />
+          <span>Join Session</span>
         </button>
         {isInRoom && (
           <button
