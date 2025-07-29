@@ -1,12 +1,10 @@
 import { useState } from "react";
 import { DevToolsContext } from "@/components/DevToolsContext";
 import { Header } from "@/components/Header";
-
-import "@/styles/webrtc.css";
 import { LoadingOverlay } from "./components/LoadingOverlay";
-import { ConnectionStats } from "./components/ConnectionStats";
 import { ConnectionState, ConnectionStatus } from "./components/ConnectionStatus";
 import { ConnectionControls } from "./components/ConnectionControls";
+import "@/styles/index.css";
 
 function App() {
   const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
@@ -15,14 +13,11 @@ function App() {
   const [enableE2E, setEnableE2E] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [loadingText, setLoadingText] = useState("Connecting...");
-  const [stats, setStats] = useState<any>(null);
   
-  // Auto-detect WebSocket URL
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const host = window.location.host || 'localhost:8080';
-  const wsUrl = `${protocol}//${host}/ws`;
-
-
+  // Derived state
+  const isConnected = connectionState === "connected";
+  const isInRoom = userName !== "";
+  
   // Handle connection
   const handleConnect = async () => {
     try {
@@ -44,7 +39,7 @@ function App() {
   };
 
   // Handle joining room
-  const handleJoinRoom = async (name: string, room: string) => {
+  const handleJoinRoom = async (name: string, _room: string) => {
     try {
       setConnectionStatus("Joining room...");
       setUserName(name);
@@ -68,26 +63,26 @@ function App() {
   };
 
   // Media controls using hooks
-  const toggleAudio = () => {
+  // const toggleAudio = () => {
     
-  };
+  // };
 
-  const toggleVideo = () => {
+  // const toggleVideo = () => {
    
-  };
+  // };
 
-  const switchCamera = async () => {
+  // const switchCamera = async () => {
     
-  };
+  // };
 
   // Share screen using hook
-  const shareScreen = async () => {
-    try {
+  // const shareScreen = async () => {
+  //   try {
       
-    } catch (error) {
-      console.error("Failed to share screen:", error);
-    }
-  };
+  //   } catch (error) {
+  //     console.error("Failed to share screen:", error);
+  //   }
+  // };
 
 
 
@@ -118,8 +113,7 @@ function App() {
               
             
               
-              <ConnectionStats stats={stats} />
-              
+            
              
             </div>
           </div>
