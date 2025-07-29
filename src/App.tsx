@@ -1,65 +1,103 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DevToolsContext } from "@/components/DevToolsContext";
 import { Header } from "@/components/Header";
 import { LoadingOverlay } from "./components/LoadingOverlay";
 import { ConnectionState, ConnectionStatus } from "./components/ConnectionStatus";
 import { ConnectionControls } from "./components/ConnectionControls";
+import { useZoomSDK } from "./hooks/useZoomSDK";
 import "@/styles/index.css";
 
 function App() {
-  const [connectionState, setConnectionState] = useState<ConnectionState>("disconnected");
-  const [connectionStatus, setConnectionStatus] = useState("Ready to connect");
-  const [userName, setUserName] = useState("");
   const [enableE2E, setEnableE2E] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
-  const [loadingText, setLoadingText] = useState("Connecting...");
+  const [jwtToken, setJwtToken] = useState("");
+  const [sessionPassword, setSessionPassword] = useState("");
   
-  // Derived state
-  const isConnected = connectionState === "connected";
-  const isInRoom = userName !== "";
+  // Use Zoom SDK hook
+  const {
+    isInitialized,
+    isInSession,
+    isConnecting,
+    error: zoomError,
+    sessionName,
+    userName,
+    initialize,
+    joinSession,
+    leaveSession,
+    cleanup
+  } = useZoomSDK();
+
+  // Derived state for UI compatibility
+  const connectionState: ConnectionState = isConnecting 
+    ? "connecting" 
+    : isInSession 
+    ? "connected" 
+    : zoomError 
+    ? "error" 
+    : "disconnected";
   
-  // Handle connection
-  const handleConnect = async () => {
-    try {
-      setIsLoading(true);
-      setLoadingText("Initializing camera and microphone...");
-      setConnectionState("connecting");
-      setConnectionStatus("Connecting...");
+  const connectionStatus = isConnecting 
+    ? "Connecting to Zoom session..." 
+    : isInSession 
+    ? `In session: ${sessionName}` 
+    : zoomError 
+    ? zoomError 
+    : isInitialized 
+    ? "Ready to join session" 
+    : "Initializing Zoom SDK...";
+  
+  const isConnected = isInSession;
+  const isInRoom = isInSession;
+  
+  // Initialize Zoom SDK on mount
+  useEffect(() => {
+    const initSDK = async () => {
+      try {
+        await initialize();
+      } catch (error) {
+        console.error("Failed to initialize Zoom SDK:", error);
+      }
+    };
     
-      setConnectionState("connected");
-      setConnectionStatus("Connected - Ready to join room");
-      
-    } catch (error) {
-      console.error("Connection failed:", error);
-      setConnectionState("error");
-      setConnectionStatus(error instanceof Error ? error.message : "Connection failed");
-    } finally {
-      setIsLoading(false);
+    initSDK();
+  }, [initialize]);
+
+  // Handle connection (initialize SDK)
+  const handleConnect = async () => {
+    if (!isInitialized) {
+      try {
+        await initialize();
+      } catch (error) {
+        console.error("Connection failed:", error);
+      }
     }
   };
 
   // Handle joining room
-  const handleJoinRoom = async (name: string, _room: string) => {
+  const handleJoinRoom = async (name: string, room: string) => {
+    if (!jwtToken) {
+      throw new Error("JWT token is required to join session");
+    }
+
     try {
-      setConnectionStatus("Joining room...");
-      setUserName(name);
-      
-      // await joinRoom(room, name);
-      setConnectionStatus("In room");
-      
+      await joinSession({
+        session_name: room,
+        user_name: name,
+        session_password: sessionPassword || undefined,
+        jwt_token: jwtToken,
+      });
     } catch (error) {
       console.error("Failed to join room:", error);
-      setConnectionState("error");
-      setConnectionStatus(error instanceof Error ? error.message : "Failed to join room");
+      throw error;
     }
   };
 
   // Handle disconnect
-  const handleDisconnect = () => {
-    
-    setConnectionState("disconnected");
-    setConnectionStatus("Disconnected");
-    setUserName("");
+  const handleDisconnect = async () => {
+    try {
+      await leaveSession();
+    } catch (error) {
+      console.error("Failed to disconnect:", error);
+    }
   };
 
   // Media controls using hooks
@@ -121,7 +159,7 @@ function App() {
         
         
         
-        <LoadingOverlay isVisible={isLoading} text={loadingText} />
+        <LoadingOverlay isVisible={isConnecting} text="Connecting to Zoom session..." />
       </div>
     </DevToolsContext>
   );
