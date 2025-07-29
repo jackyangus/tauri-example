@@ -3267,6 +3267,16 @@ dependencies = [
 ]
 
 [[package]]
+name = "tauri-example"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+ "tauri",
+ "tauri-build",
+]
+
+[[package]]
 name = "tauri-macros"
 version = "2.3.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -4015,16 +4025,6 @@ dependencies = [
  "pkg-config",
  "soup3-sys",
  "system-deps",
-]
-
-[[package]]
-name = "webrtc-client"
-version = "0.1.0"
-dependencies = [
- "serde",
- "serde_json",
- "tauri",
- "tauri-build",
 ]
 
 [[package]]

@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "webrtc-client",
+      "name": "tauri-client",
       "dependencies": {
         "@radix-ui/react-slot": "^1.2.3",
         "@tauri-apps/api": "2",

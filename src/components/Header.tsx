@@ -6,8 +6,8 @@ interface HeaderProps {
 }
 
 export const Header: React.FC<HeaderProps> = ({ 
-  title = "WebRTC Meeting System",
-  subtitle = "Advanced Browser Compatibility Testing & Video Conferencing"
+  title = "Tauri client example",
+  subtitle = ""
 }) => {
   return (
     <div className="header-section">
