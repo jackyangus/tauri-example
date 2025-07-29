@@ -67,13 +67,9 @@ export const useZoomSDK = () => {
         userIdentity: userName,
       };
 
-      // Fetch JWT token from local server (skip in browser debug mode)
-      let jwtToken = 'mock-jwt-token';
-      if (isTauriEnvironment()) {
-        jwtToken = await JWTService.requestJWTToken(fullJwtRequest);
-      } else {
-        console.log('[DEBUG] Skipping JWT request in browser mode');
-      }
+      // Fetch JWT token from local server
+      console.log('[DEBUG] Requesting JWT token from 127.0.0.1:4000...', fullJwtRequest);
+      const jwtToken = await JWTService.requestJWTToken(fullJwtRequest);
 
       setState(prev => ({
         ...prev,
@@ -100,11 +96,24 @@ export const useZoomSDK = () => {
       }));
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : 'Unknown error';
+      console.error('[ERROR] Join session failed:', error);
+      
+      let userFriendlyMessage = `Failed to join session: ${errorMessage}`;
+      
+      // Provide specific error messages for common issues
+      if (errorMessage.includes('127.0.0.1:4000')) {
+        userFriendlyMessage = 'JWT server not reachable at 127.0.0.1:4000. Please ensure your JWT server is running.';
+      } else if (errorMessage.includes('JWT request failed')) {
+        userFriendlyMessage = 'JWT token request failed. Check your JWT server configuration.';
+      } else if (errorMessage.includes('Invalid JWT response')) {
+        userFriendlyMessage = 'Invalid JWT token received from server. Check server response format.';
+      }
+      
       setState(prev => ({
         ...prev,
         isConnecting: false,
         isFetchingToken: false,
-        error: `Failed to join session: ${errorMessage}`,
+        error: userFriendlyMessage,
       }));
       throw error;
     }

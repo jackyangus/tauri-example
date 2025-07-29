@@ -35,6 +35,8 @@ function App() {
     ? "connected" 
     : zoomError 
     ? "error" 
+    : isInitialized
+    ? "disconnected"
     : "disconnected";
   
   const connectionStatus = isFetchingToken
@@ -49,7 +51,6 @@ function App() {
     ? "Ready to join session" 
     : "Initializing Zoom SDK...";
   
-  const isConnected = isInSession;
   const isInRoom = isInSession;
   const isDebugMode = !isTauriEnvironment();
   
@@ -80,6 +81,7 @@ function App() {
   // Handle joining room with automatic JWT token fetching
   const handleJoinRoom = async (name: string, room: string) => {
     try {
+      console.log(jwtConfig)
       await joinSession(room, name, jwtConfig);
     } catch (error) {
       console.error("Failed to join room:", error);
@@ -151,7 +153,7 @@ function App() {
                 onConnect={handleConnect}
                 onJoinRoom={handleJoinRoom}
                 onDisconnect={handleDisconnect}
-                isConnected={isConnected}
+                isConnected={true}
                 isInRoom={isInRoom}
                 enableE2E={enableE2E}
                 onEnableE2EChange={setEnableE2E}

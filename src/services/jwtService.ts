@@ -14,7 +14,7 @@ export interface JWTTokenRequest {
 }
 
 export interface JWTTokenResponse {
-  token: string;
+  signature: string;
   expires_in?: number;
 }
 
@@ -22,6 +22,8 @@ export class JWTService {
   private static readonly JWT_ENDPOINT = 'http://127.0.0.1:4000';
 
   static async requestJWTToken(request: JWTTokenRequest): Promise<string> {
+    console.log(`[JWT] Requesting token from ${this.JWT_ENDPOINT}`, request);
+    
     try {
       const response = await fetch(this.JWT_ENDPOINT, {
         method: 'POST',
@@ -31,18 +33,25 @@ export class JWTService {
         body: JSON.stringify(request),
       });
 
+      console.log(`[JWT] Response status: ${response.status} ${response.statusText}`);
+
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error(`[JWT] Error response:`, errorText);
         throw new Error(`JWT request failed: ${response.status} ${response.statusText}`);
       }
 
       const data: JWTTokenResponse = await response.json();
+      console.log(`[JWT] Response data:`, data);
       
-      if (!data.token) {
+      if (!data.signature) {
         throw new Error('Invalid JWT response: missing token');
       }
 
-      return data.token;
+      console.log(`[JWT] Token received successfully`);
+      return data.signature;
     } catch (error) {
+      console.error(`[JWT] Request failed:`, error);
       if (error instanceof Error) {
         throw new Error(`Failed to request JWT token: ${error.message}`);
       }
