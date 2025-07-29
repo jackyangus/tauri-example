@@ -1,9 +1,7 @@
 use cocoa::foundation::{NSString, NSAutoreleasePool};
 use objc::runtime::{Class, Object};
-use objc::{class, msg_send, sel, sel_impl};
+use objc::{msg_send, sel, sel_impl};
 use serde::{Deserialize, Serialize};
-use std::ffi::CStr;
-use std::os::raw::c_char;
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct ZoomSessionConfig {
@@ -19,8 +17,13 @@ pub struct ZoomSDKError {
     pub message: String,
 }
 
+// Thread-safe wrapper for the Objective-C object pointer
+struct SDKInstance(*mut Object);
+unsafe impl Send for SDKInstance {}
+unsafe impl Sync for SDKInstance {}
+
 pub struct ZoomSDKManager {
-    sdk_instance: Option<*mut Object>,
+    sdk_instance: Option<SDKInstance>,
     is_initialized: bool,
 }
 
@@ -63,7 +66,7 @@ impl ZoomSDKManager {
             let result: i32 = msg_send![shared_sdk, initialize: init_params];
             
             if result == 0 {
-                self.sdk_instance = Some(shared_sdk);
+                self.sdk_instance = Some(SDKInstance(shared_sdk));
                 self.is_initialized = true;
                 Ok(())
             } else {
@@ -86,7 +89,7 @@ impl ZoomSDKManager {
         unsafe {
             let _pool = NSAutoreleasePool::new(cocoa::base::nil);
             
-            if let Some(sdk) = self.sdk_instance {
+            if let Some(SDKInstance(sdk)) = self.sdk_instance {
                 // Create session context
                 let session_context_class = Class::get("ZMVideoSDKSessionContext").ok_or(ZoomSDKError {
                     code: -4,
@@ -138,7 +141,7 @@ impl ZoomSDKManager {
         }
 
         unsafe {
-            if let Some(sdk) = self.sdk_instance {
+            if let Some(SDKInstance(sdk)) = self.sdk_instance {
                 let result: i32 = msg_send![sdk, leaveSession: true]; // true for end session
                 
                 if result == 0 {
@@ -161,7 +164,7 @@ impl ZoomSDKManager {
     pub fn cleanup(&mut self) {
         if self.is_initialized {
             unsafe {
-                if let Some(sdk) = self.sdk_instance {
+                if let Some(SDKInstance(sdk)) = self.sdk_instance {
                     let _: () = msg_send![sdk, cleanup];
                 }
             }

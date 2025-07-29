@@ -27,10 +27,28 @@
   "bundle": {
     "active": true,
     "targets": "all",
+    "resources": [
+      "libs/*.dylib"
+    ],
     "macOS": {
       "entitlements": "entitlements.plist",
       "exceptionDomain": null,
-      "frameworks": [],
+      "frameworks": [
+        "libs/ZMVideoSDK.framework",
+        "libs/ZoomTask.framework",
+        "libs/ZoomVideoSDKMeetingBridge.framework",
+        "libs/cmmbiz.framework",
+        "libs/cmmlib.framework",
+        "libs/curl64.framework",
+        "libs/nydus.framework",
+        "libs/protobuf.framework",
+        "libs/tp.framework",
+        "libs/util.framework",
+        "libs/viper.framework",
+        "libs/xmpp_framework.framework",
+        "libs/zEventTracker.framework",
+        "libs/zNetUtils.framework"
+      ],
       "providerShortName": null,
       "signingIdentity": null,
       "hardenedRuntime": true

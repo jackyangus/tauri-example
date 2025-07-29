@@ -137,7 +137,7 @@ function App() {
               {isDebugMode && (
                 <div className="alert alert-info mb-4" role="alert">
                   <i className="bi bi-info-circle me-2"></i>
-                  <strong>Debug Mode:</strong> Running in browser with mock Zoom SDK. JWT requests are skipped.
+                  <strong>Debug Mode:</strong>
                 </div>
               )}
               
