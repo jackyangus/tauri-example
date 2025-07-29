@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
+import { safeInvoke } from '../utils/tauri';
 
 export function DevToolsContext({ children }: { children: React.ReactNode }) {
   useEffect(() => {
@@ -24,16 +24,9 @@ export function DevToolsContext({ children }: { children: React.ReactNode }) {
       // Handle click on context menu
       contextMenu.addEventListener('click', async () => {
         try {
-          await invoke('open_devtools');
+          await safeInvoke('open_devtools');
         } catch (error) {
           console.error('Failed to open devtools:', error);
-          // Fallback for development
-          if (window.location.hostname === 'localhost') {
-            // In dev mode, try to open browser devtools
-            if (typeof window !== 'undefined' && (window as any).__TAURI__) {
-              console.log('Right-clicked! Devtools should open.');
-            }
-          }
         }
         document.body.removeChild(contextMenu);
       });
@@ -55,7 +48,7 @@ export function DevToolsContext({ children }: { children: React.ReactNode }) {
       if ((e.metaKey || e.ctrlKey) && e.shiftKey && e.key === 'I') {
         e.preventDefault();
         try {
-          await invoke('open_devtools');
+          await safeInvoke('open_devtools');
         } catch (error) {
           console.error('Failed to open devtools via keyboard:', error);
         }

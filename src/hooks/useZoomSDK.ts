@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
-import { invoke } from '@tauri-apps/api/core';
-import { ZoomSessionConfig, ZoomSDKError } from '../types/zoom';
+import { ZoomSessionConfig } from '../types/zoom';
 import { JWTService, JWTTokenRequest } from '../services/jwtService';
+import { safeInvoke, isTauriEnvironment } from '../utils/tauri';
 
 export interface ZoomSDKState {
   isInitialized: boolean;
@@ -28,13 +28,18 @@ export const useZoomSDK = () => {
   const initialize = useCallback(async (domain?: string) => {
     try {
       setState(prev => ({ ...prev, error: null }));
-      await invoke('zoom_initialize', { domain });
+      
+      if (!isTauriEnvironment()) {
+        console.log('[DEBUG] Running in browser mode - using mock Zoom SDK');
+      }
+      
+      await safeInvoke('zoom_initialize', { domain });
       setState(prev => ({ ...prev, isInitialized: true }));
     } catch (error) {
-      const zoomError = error as ZoomSDKError;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setState(prev => ({
         ...prev,
-        error: `Initialization failed: ${zoomError.message}`,
+        error: `Initialization failed: ${errorMessage}`,
         isInitialized: false,
       }));
       throw error;
@@ -62,8 +67,13 @@ export const useZoomSDK = () => {
         userIdentity: userName,
       };
 
-      // Fetch JWT token from local server
-      const jwtToken = await JWTService.requestJWTToken(fullJwtRequest);
+      // Fetch JWT token from local server (skip in browser debug mode)
+      let jwtToken = 'mock-jwt-token';
+      if (isTauriEnvironment()) {
+        jwtToken = await JWTService.requestJWTToken(fullJwtRequest);
+      } else {
+        console.log('[DEBUG] Skipping JWT request in browser mode');
+      }
 
       setState(prev => ({
         ...prev,
@@ -79,7 +89,7 @@ export const useZoomSDK = () => {
         session_password: jwtRequest?.sessionKey !== sessionName ? jwtRequest?.sessionKey : undefined,
       };
 
-      await invoke('zoom_join_session', { config });
+      await safeInvoke('zoom_join_session', { config });
 
       setState(prev => ({
         ...prev,
@@ -104,7 +114,7 @@ export const useZoomSDK = () => {
   const leaveSession = useCallback(async () => {
     try {
       setState(prev => ({ ...prev, error: null }));
-      await invoke('zoom_leave_session');
+      await safeInvoke('zoom_leave_session');
       setState(prev => ({
         ...prev,
         isInSession: false,
@@ -112,10 +122,10 @@ export const useZoomSDK = () => {
         userName: null,
       }));
     } catch (error) {
-      const zoomError = error as ZoomSDKError;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setState(prev => ({
         ...prev,
-        error: `Failed to leave session: ${zoomError.message}`,
+        error: `Failed to leave session: ${errorMessage}`,
       }));
       throw error;
     }
@@ -124,7 +134,7 @@ export const useZoomSDK = () => {
   // Cleanup SDK resources
   const cleanup = useCallback(async () => {
     try {
-      await invoke('zoom_cleanup');
+      await safeInvoke('zoom_cleanup');
       setState({
         isInitialized: false,
         isInSession: false,
@@ -135,10 +145,10 @@ export const useZoomSDK = () => {
         userName: null,
       });
     } catch (error) {
-      const zoomError = error as ZoomSDKError;
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error';
       setState(prev => ({
         ...prev,
-        error: `Cleanup failed: ${zoomError.message}`,
+        error: `Cleanup failed: ${errorMessage}`,
       }));
     }
   }, []);

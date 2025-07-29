@@ -7,6 +7,7 @@ import { ConnectionControls } from "./components/ConnectionControls";
 import { JWTConfig } from "./components/JWTConfig";
 import { useZoomSDK } from "./hooks/useZoomSDK";
 import { JWTTokenRequest } from "./services/jwtService";
+import { isTauriEnvironment } from "./utils/tauri";
 import "@/styles/index.css";
 
 function App() {
@@ -50,6 +51,7 @@ function App() {
   
   const isConnected = isInSession;
   const isInRoom = isInSession;
+  const isDebugMode = !isTauriEnvironment();
   
   // Initialize Zoom SDK on mount
   useEffect(() => {
@@ -129,7 +131,13 @@ function App() {
         <div className="container-fluid">
           <div className="main-container container">
             <div className="p-4">
-            
+              
+              {isDebugMode && (
+                <div className="alert alert-info mb-4" role="alert">
+                  <i className="bi bi-info-circle me-2"></i>
+                  <strong>Debug Mode:</strong> Running in browser with mock Zoom SDK. JWT requests are skipped.
+                </div>
+              )}
               
               <ConnectionStatus status={connectionStatus} state={connectionState} />
               
