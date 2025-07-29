@@ -144,9 +144,10 @@ Make sure your JWT server is running on port 4000:
 
 ```bash
 # Terminal 1: Start JWT server
-node test-jwt-server.js
-# or
-cd videosdk-auth-endpoint-sample && npm run start
+git clone https://github.com/zoom/videosdk-auth-endpoint-sample --depth 1
+cd videosdk-auth-endpoint-sample
+npm install
+npm run start
 
 # Terminal 2: Start the app
 npm run tauri dev
