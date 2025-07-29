@@ -18,6 +18,14 @@ npm run tauri build  # Build Tauri app for production
 npm run tauri        # Access Tauri CLI directly
 ```
 
+### JWT Server Development
+```bash
+git clone https://github.com/zoom/videosdk-auth-endpoint-sample --depth 1
+cd videosdk-auth-endpoint-sample
+npm install
+npm run start
+```
+
 ### Package Manager
 This project uses both npm and bun. The Tauri configuration references `bun run dev` and `bun run build`, but package.json scripts work with npm as well.
 
@@ -26,51 +34,90 @@ This project uses both npm and bun. The Tauri configuration references `bun run 
 ### Hybrid Architecture
 This is a **Tauri v2 application** combining:
 - **Frontend**: React 19 + TypeScript + Vite + Tailwind CSS
-- **Backend**: Rust with Tauri framework
-- **WebRTC**: Built for real-time communication with simple-peer library
+- **Backend**: Rust with Tauri framework + Zoom Video SDK macOS 2.3.0
+- **Video Conferencing**: Zoom Video SDK for professional-grade video sessions
+- **Authentication**: JWT token-based authentication with local server
 
 ### Key Technical Decisions
 
-**Node.js Polyfills**: The project includes extensive Node.js polyfills (`buffer`, `events`, `process`, `util`) configured in vite.config.ts to support WebRTC libraries in the browser environment.
+**Zoom Video SDK Integration**: Native macOS Zoom Video SDK 2.3.0 integrated via Rust/Tauri with Objective-C bindings for professional video conferencing capabilities.
 
-**CSP Configuration**: Custom Content Security Policy in tauri.conf.json allows WebSocket connections (`wss:`, `ws:`), media streams (`mediastream:`), and blob URLs for WebRTC functionality.
+**JWT Authentication**: Local JWT server at `127.0.0.1:4000` provides session tokens with configurable parameters (role, expiration, geo regions, recording options).
 
-**macOS Private API**: Enabled in tauri.conf.json for enhanced native integration.
+**Browser Compatibility Layer**: `src/utils/tauri.ts` provides mock functions for browser development when Tauri APIs are unavailable.
+
+**Node.js Polyfills**: Extensive Node.js polyfills (`buffer`, `events`, `process`, `util`) configured in vite.config.ts to support SDK libraries in browser environment.
+
+**CSP Configuration**: Custom Content Security Policy allows WebSocket connections (`wss:`, `ws:`), media streams (`mediastream:`), and blob URLs for video functionality.
+
+**macOS Private API**: Enabled in tauri.conf.json for enhanced native integration with Zoom SDK.
 
 ### Frontend Structure
 
-**State Management**: React useState-based state management in App.tsx with derived state patterns:
-- Connection state flows: disconnected → connecting → connected → error
-- Media state derived from connection state (isConnected, isInRoom)
+**State Management**: React useState-based state management with Zoom SDK integration:
+- `useZoomSDK` hook manages SDK lifecycle: initialization → JWT fetch → session join → session leave
+- Connection states: disconnected → connecting (JWT fetch) → connecting (Zoom join) → connected → error
+- Automatic session name generation for simplified user experience
 
 **Component Architecture**:
-- `DevToolsContext`: Wrapper providing right-click devtools access and Cmd/Ctrl+Shift+I keyboard shortcut
-- Connection components: Status display, controls, and statistics
-- Custom hooks for media device management and screen sharing
+- `DevToolsContext`: Cross-platform devtools access with browser/Tauri compatibility
+- `JWTConfig`: Advanced JWT parameter configuration with toggle visibility
+- `ConnectionControls`: Simplified interface (removed Room ID, auto-generates session names)
+- `ConnectionStatus` and `ConnectionStats`: Real-time status and session information display
 
-**Styling**: Hybrid approach using both Tailwind CSS and Bootstrap with custom CSS for WebRTC-specific styles.
+**Custom Hooks**:
+- `useZoomSDK`: Complete Zoom SDK lifecycle management with JWT integration
+- `useMediaDevices`: Camera/microphone enumeration and control (for future enhancement)
+- `useScreenSharing`: Screen capture functionality (for future enhancement)
+
+**Styling**: Hybrid approach using Tailwind CSS and Bootstrap with custom CSS for video conferencing UI.
 
 ### Backend Structure
 
-**Tauri Commands**: 
+**Zoom SDK Integration** (`src-tauri/src/zoom_sdk.rs`):
+- Objective-C bindings to native Zoom Video SDK frameworks
+- `ZoomSDKManager` struct managing SDK lifecycle and session state
+- Thread-safe global SDK instance with mutex protection
+
+**Tauri Commands**:
+- `zoom_initialize(domain?)`: Initialize Zoom SDK with optional domain configuration
+- `zoom_join_session(config)`: Join Zoom session with JWT token and session parameters
+- `zoom_leave_session()`: Leave current Zoom session
+- `zoom_cleanup()`: Clean up SDK resources
 - `greet(name)`: Example command returning formatted greeting
 - `open_devtools()`: Opens browser devtools in the webview
 
-**Development Tools Integration**: Custom DevToolsContext component enables devtools access via right-click context menu and keyboard shortcuts, calling the `open_devtools` Rust command.
+**Build Configuration** (`src-tauri/build.rs`):
+- Links all required Zoom SDK frameworks and dynamic libraries
+- Configures framework search paths for native SDK integration
 
-### WebRTC Integration
+**Development Tools Integration**: Cross-platform devtools access using `safeInvoke` wrapper for browser/Tauri compatibility.
 
-**Media Management**: 
-- `useMediaDevices` hook handles camera/microphone enumeration, device switching, and stream management
-- `useScreenSharing` hook manages screen capture functionality
-- Error handling for common WebRTC scenarios (permissions, device availability, security errors)
+### Zoom Video SDK Integration
 
-**Connection Flow**:
-1. Initialize media devices → 2. Connect to signaling server → 3. Join room → 4. Establish peer connections
+**JWT Token Flow** (`src/services/jwtService.ts`):
+- `JWTService.requestJWTToken()`: POST request to `127.0.0.1:4000` with session parameters
+- Configurable JWT parameters: role, session name, expiration, geo regions, recording options
+- Real-time token fetching with comprehensive error handling and logging
+
+**Session Flow**:
+1. SDK initialization → 2. JWT token request → 3. Zoom session join → 4. Video conferencing → 5. Session leave
+
+**SDK Configuration**:
+- Session parameters: `session_name`, `user_name`, `jwt_token`, optional `session_password`
+- Automatic session name generation: `"zoom-session-" + timestamp`
+- Support for host/participant roles, cloud recording, and geo-region selection
 
 ### Development Considerations
 
-**Port Configuration**: Frontend dev server runs on port 1420 (configured in both package.json and vite.config.ts). Tauri expects this port for the devUrl.
+**Port Configuration**: 
+- Frontend dev server: port 1420 (Vite configuration)
+- JWT server: port 4000 (local authentication server)
+
+**Cross-Platform Development**:
+- `safeInvoke` wrapper enables browser debugging with mock Tauri functions
+- Environment detection (`isTauriEnvironment()`) switches between real/mock APIs
+- Debug mode indicator shows when running in browser with mocked functionality
 
 **File Aliases**: Vite configured with `@` alias pointing to `./src` directory.
 
@@ -78,7 +125,19 @@ This is a **Tauri v2 application** combining:
 
 **Bundle Configuration**: Tauri builds target "all" platforms with macOS-specific entitlements and hardened runtime enabled.
 
-### WebRTC Security Notes
-- HTTPS/localhost requirement enforced for media access
-- Comprehensive error messages for permission and device access issues
-- CSP configured to allow necessary WebRTC domains and protocols
+### Security & Authentication
+
+**JWT Token Security**:
+- Local JWT server at `127.0.0.1:4000` for development/testing
+- Configurable token expiration and session parameters
+- Role-based access control (host vs participant)
+
+**Zoom SDK Security**:
+- Native macOS SDK integration with proper code signing
+- Session-based authentication with JWT tokens
+- Optional end-to-end encryption support
+
+**Development Security**:
+- CSP configured for video conferencing domains and protocols
+- CORS handling for local JWT server development
+- Comprehensive error handling without exposing sensitive information
