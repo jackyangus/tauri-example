@@ -127,47 +127,55 @@ function App() {
 
   return (
     <DevToolsContext>
-      <div className="min-h-screen" style={{ background: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)" }}>
-        <Header />
+      <div className="min-h-screen relative overflow-hidden bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-800">
+        <div className="absolute inset-0 opacity-50" style={{
+          backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%239C92AC' fill-opacity='0.1'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`
+        }}></div>
         
-        <div className="container-fluid">
-          <div className="main-container container">
-            <div className="p-4">
+        <div className="relative z-10">
+          <Header />
+          
+          <div className="container mx-auto px-4 py-8 max-w-4xl">
+            <div className="glass-strong rounded-3xl shadow-2xl p-8 space-y-8 animate-float">
               
               {isDebugMode && (
-                <div className="alert alert-info mb-4" role="alert">
-                  <i className="bi bi-info-circle me-2"></i>
-                  <strong>Debug Mode:</strong>
+                <div className="glass rounded-2xl p-4 flex items-center space-x-3 animate-pulse border-blue-400/30">
+                  <div className="w-6 h-6 bg-gradient-to-br from-blue-400 to-blue-600 rounded-full flex items-center justify-center animate-glow">
+                    <i className="bi bi-info-circle text-white text-sm"></i>
+                  </div>
+                  <div>
+                    <span className="text-blue-100 font-medium">Debug Mode Active</span>
+                    <p className="text-blue-200/80 text-sm mt-1">Running in browser with mocked Tauri functions</p>
+                  </div>
                 </div>
               )}
               
-              <ConnectionStatus status={connectionStatus} state={connectionState} />
+              <div className="glass rounded-2xl p-6 hover:scale-105 transition-transform duration-300">
+                <ConnectionStatus status={connectionStatus} state={connectionState} />
+              </div>
               
-              <JWTConfig
-                onConfigChange={setJwtConfig}
-                isVisible={showJWTConfig}
-                onToggle={() => setShowJWTConfig(!showJWTConfig)}
-              />
+              <div className="glass rounded-2xl overflow-hidden transition-all duration-500 ease-in-out hover:scale-105">
+                <JWTConfig
+                  onConfigChange={setJwtConfig}
+                  isVisible={showJWTConfig}
+                  onToggle={() => setShowJWTConfig(!showJWTConfig)}
+                />
+              </div>
               
-              <ConnectionControls
-                onConnect={handleConnect}
-                onJoinRoom={handleJoinRoom}
-                onDisconnect={handleDisconnect}
-                isConnected={true}
-                isInRoom={isInRoom}
-                enableE2E={enableE2E}
-                onEnableE2EChange={setEnableE2E}
-              />
-              
-            
-              
-            
-             
+              <div className="glass rounded-2xl p-6 hover:scale-105 transition-transform duration-300">
+                <ConnectionControls
+                  onConnect={handleConnect}
+                  onJoinRoom={handleJoinRoom}
+                  onDisconnect={handleDisconnect}
+                  isConnected={true}
+                  isInRoom={isInRoom}
+                  enableE2E={enableE2E}
+                  onEnableE2EChange={setEnableE2E}
+                />
+              </div>
             </div>
           </div>
         </div>
-        
-        
         
         <LoadingOverlay 
           isVisible={isConnecting || isFetchingToken} 
