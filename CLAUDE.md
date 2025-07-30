@@ -13,6 +13,7 @@ npm run preview      # Preview production build
 
 ### Tauri Development
 ```bash
+npm start            # Start Tauri app in development mode (alias for npm run tauri dev)
 npm run tauri dev    # Start Tauri app in development mode
 npm run tauri build  # Build Tauri app for production
 npm run tauri        # Access Tauri CLI directly

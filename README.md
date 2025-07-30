@@ -133,6 +133,8 @@ npm run dev
 #### Tauri Development (Full Functionality)
 ```bash
 # Start the Tauri application
+npm start
+# or
 npm run tauri dev
 
 # This provides full Zoom SDK integration
@@ -150,7 +152,7 @@ npm install
 npm run start
 
 # Terminal 2: Start the app
-npm run tauri dev
+npm start
 ```
 
 ## Usage
