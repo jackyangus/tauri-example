@@ -1,3 +1,5 @@
+#![allow(unexpected_cfgs)]
+
 use cocoa::foundation::{NSString, NSAutoreleasePool};
 use objc::runtime::{Class, Object};
 use objc::{msg_send, sel, sel_impl};

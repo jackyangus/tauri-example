@@ -27,12 +27,14 @@ export function DevToolsContext({ children }: { children: React.ReactNode }) {
           await invoke('open_devtools');
         } catch (error) {
           console.error('Failed to open devtools:', error);
-          // Fallback for development
-          if (window.location.hostname === 'localhost') {
-            // In dev mode, try to open browser devtools
-            if (typeof window !== 'undefined' && (window as any).__TAURI__) {
-              console.log('Right-clicked! Devtools should open.');
-            }
+          // Fallback for browser development
+          if (window.location.hostname === 'localhost' && !(window as any).__TAURI__) {
+            console.log('%c🔧 Right-click DevTools: Press F12 to open Chrome DevTools', 
+              'background: #007acc; color: white; padding: 8px; font-size: 14px; border-radius: 4px;'
+            );
+            
+            // Optional: Use debugger to auto-open (will pause execution)
+
           }
         }
         document.body.removeChild(contextMenu);
