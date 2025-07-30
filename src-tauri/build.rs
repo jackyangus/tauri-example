@@ -8,21 +8,10 @@ fn main() {
     let libs_path = PathBuf::from(&manifest_dir).join("libs");
     let target_dir = std::env::var("OUT_DIR").unwrap();
     let target_path = PathBuf::from(target_dir);
-    let target_dir = target_path.ancestors().nth(3).unwrap();
+    let _target_dir = target_path.ancestors().nth(3).unwrap();
     
-    // Copy VideoSDK.dylib to target directories for development
-    let videosdk_source = libs_path.join("VideoSDK.dylib");
-    if videosdk_source.exists() {
-        // Copy to target/debug or target/release
-        let target_videosdk = target_dir.join("VideoSDK.dylib");
-        let _ = std::fs::copy(&videosdk_source, &target_videosdk);
-        
-        // Copy to target/debug/libs or target/release/libs
-        let target_libs_dir = target_dir.join("libs");
-        let _ = std::fs::create_dir_all(&target_libs_dir);
-        let target_libs_videosdk = target_libs_dir.join("VideoSDK.dylib");
-        let _ = std::fs::copy(&videosdk_source, &target_libs_videosdk);
-    }
+    // VideoSDK functionality is now provided by ZMVideoSDK.framework
+    // No need to copy standalone VideoSDK.dylib
     
     // Add framework and library search paths
     println!("cargo:rustc-link-search=framework={}", libs_path.display());
@@ -56,8 +45,7 @@ fn main() {
     println!("cargo:rustc-link-lib=framework=zNetUtils");
     
     // Link dynamic libraries by their actual names (without lib prefix for Rust)
-    // VideoSDK.dylib - special case, no lib prefix
-    println!("cargo:rustc-link-lib=dylib=VideoSDK");
+    // VideoSDK functionality is provided by ZMVideoSDK.framework, not dylib
     // All others have lib prefix, so we use the name after lib
     println!("cargo:rustc-link-lib=dylib=cares");
     println!("cargo:rustc-link-lib=dylib=crypto");
@@ -70,6 +58,5 @@ fn main() {
     
     // Tell cargo to re-run if the libs directory or specific files change
     println!("cargo:rerun-if-changed=libs");
-    println!("cargo:rerun-if-changed=libs/VideoSDK.dylib");
-    println!("cargo:rerun-if-changed=libs/libVideoSDK.dylib");
+    println!("cargo:rerun-if-changed=libs/ZMVideoSDK.framework");
 }
