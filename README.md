@@ -292,3 +292,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ---
 
 For more detailed technical information, see [CLAUDE.md](CLAUDE.md).
+
+
+# Update
+npx npm-check -u
