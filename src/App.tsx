@@ -145,8 +145,7 @@ function App() {
                   </div>
                   <div>
                     <span className="text-blue-100 font-medium">Debug Mode Active</span>
-                    <p className="text-blue-200/80 text-sm mt-1">Running in browser with mocked Tauri functions</p>
-                  </div>
+                   </div>
                 </div>
               )}
               
